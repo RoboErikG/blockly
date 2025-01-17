@@ -7,7 +7,6 @@
 // Former goog.module ID: Blockly.blockAnimations
 
 import type {BlockSvg} from './block_svg.js';
-import { math } from './utils.js';
 import * as dom from './utils/dom.js';
 import {Svg} from './utils/svg.js';
 
@@ -177,7 +176,7 @@ export function disconnectUiEffect(block: BlockSvg) {
   }
   // Start the animation.
   wobblingBlock = block;
-  disconnectUiStep(block, magnitude, new Date(), 0);
+  disconnectUiStep(block, magnitude, 0);
 }
 
 /**
@@ -185,22 +184,28 @@ export function disconnectUiEffect(block: BlockSvg) {
  *
  * @param block Block to animate.
  * @param magnitude Maximum degrees skew (reversed for RTL).
- * @param start Date of animation's start.
+ * @param step Which step of the animation we're on.
  */
-function disconnectUiStep(block: BlockSvg, magnitude: number, start: Date, step: number) {
+function disconnectUiStep(block: BlockSvg, magnitude: number, step: number) {
   const DURATION = 200; // Milliseconds.
-  const STEPS = DURATION / 15;
-  const WIGGLES = 7; // Wiggles have a range of 6, from -3 to +3.
-  const WIGGLE_OFFSET = Math.round(WIGGLES / 2);
+  const STEPS = DURATION / 15; // 15ms per step to approximate 60fps
+  const WIGGLE_CYCLE = Math.round(STEPS / 2); // Do ~2 oscillations
+  // This starts the animation at ~0 skew
+  const WIGGLE_START = WIGGLE_CYCLE / 4;
 
-  let skew = ''
+  let skew = '';
   let skewSize = 0;
 
-  if (step++ > STEPS) {
-    skewSize = (step % WIGGLES) > WIGGLE_OFFSET ? WIGGLES - (step % WIGGLES) : step % WIGGLES;
-    if (step / WIGGLES % 2) skewSize *= 1; // odd iterations go 0 to -3
+  if (step++ <= STEPS) {
+    // The skew oscillates between -magnitude and +magnitude
+    skewSize = (step + WIGGLE_START) % WIGGLE_CYCLE;
+    skewSize = skewSize > WIGGLE_START * 2 ? WIGGLE_CYCLE - skewSize : skewSize;
+    // Offset for a range of +/- (WIGGLE_START / 2)
+    skewSize -= WIGGLE_START;
+    // scale by the magnitude
+    skewSize = Math.round((skewSize * magnitude) / WIGGLE_START);
     skew = `skewX(${skewSize})`;
-    disconnectPid = setTimeout(disconnectUiStep, 15, block, magnitude, start, skewSize);
+    disconnectPid = setTimeout(disconnectUiStep, 15, block, magnitude, step);
   }
 
   block
