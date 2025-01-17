@@ -7,6 +7,7 @@
 // Former goog.module ID: Blockly.blockAnimations
 
 import type {BlockSvg} from './block_svg.js';
+import { math } from './utils.js';
 import * as dom from './utils/dom.js';
 import {Svg} from './utils/svg.js';
 
@@ -168,6 +169,7 @@ export function disconnectUiEffect(block: BlockSvg) {
   }
   // Horizontal distance for bottom of block to wiggle.
   const DISPLACEMENT = 10;
+  const STARTING_SKEW = 2;
   // Scale magnitude of skew to height of block.
   const height = block.getHeightWidth().height;
   let magnitude = (Math.atan(DISPLACEMENT / height) / Math.PI) * 180;
@@ -176,7 +178,7 @@ export function disconnectUiEffect(block: BlockSvg) {
   }
   // Start the animation.
   wobblingBlock = block;
-  disconnectUiStep(block, magnitude, new Date());
+  disconnectUiStep(block, magnitude, new Date(), STARTING_SKEW);
 }
 
 /**
@@ -186,20 +188,20 @@ export function disconnectUiEffect(block: BlockSvg) {
  * @param magnitude Maximum degrees skew (reversed for RTL).
  * @param start Date of animation's start.
  */
-function disconnectUiStep(block: BlockSvg, magnitude: number, start: Date) {
+function disconnectUiStep(block: BlockSvg, magnitude: number, start: Date, skewSize: number) {
   const DURATION = 200; // Milliseconds.
-  const WIGGLES = 3; // Half oscillations.
+  const WIGGLES = 5; // Wiggles have a range of 5, from -2 to +2.
+  const WIGGLE_OFFSET = Math.round(WIGGLES / 2);
 
   const ms = new Date().getTime() - start.getTime();
   const percent = ms / DURATION;
 
-  let skew = '';
+  let skew = ''
+
   if (percent <= 1) {
-    const val = Math.round(
-      Math.sin(percent * Math.PI * WIGGLES) * (1 - percent) * magnitude,
-    );
-    skew = `skewX(${val})`;
-    disconnectPid = setTimeout(disconnectUiStep, 10, block, magnitude, start);
+    skewSize = (skewSize + 1) % (WIGGLES);
+    skew = `skewX(${skewSize - WIGGLE_OFFSET})`;
+    disconnectPid = setTimeout(disconnectUiStep, 15, block, magnitude, start);
   }
 
   block
