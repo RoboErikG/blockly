@@ -169,7 +169,6 @@ export function disconnectUiEffect(block: BlockSvg) {
   }
   // Horizontal distance for bottom of block to wiggle.
   const DISPLACEMENT = 10;
-  const STARTING_SKEW = 2;
   // Scale magnitude of skew to height of block.
   const height = block.getHeightWidth().height;
   let magnitude = (Math.atan(DISPLACEMENT / height) / Math.PI) * 180;
@@ -178,7 +177,7 @@ export function disconnectUiEffect(block: BlockSvg) {
   }
   // Start the animation.
   wobblingBlock = block;
-  disconnectUiStep(block, magnitude, new Date(), STARTING_SKEW);
+  disconnectUiStep(block, magnitude, new Date(), 0);
 }
 
 /**
@@ -188,19 +187,19 @@ export function disconnectUiEffect(block: BlockSvg) {
  * @param magnitude Maximum degrees skew (reversed for RTL).
  * @param start Date of animation's start.
  */
-function disconnectUiStep(block: BlockSvg, magnitude: number, start: Date, skewSize: number) {
+function disconnectUiStep(block: BlockSvg, magnitude: number, start: Date, step: number) {
   const DURATION = 200; // Milliseconds.
-  const WIGGLES = 5; // Wiggles have a range of 5, from -2 to +2.
+  const STEPS = DURATION / 15;
+  const WIGGLES = 7; // Wiggles have a range of 6, from -3 to +3.
   const WIGGLE_OFFSET = Math.round(WIGGLES / 2);
 
-  const ms = new Date().getTime() - start.getTime();
-  const percent = ms / DURATION;
-
   let skew = ''
+  let skewSize = 0;
 
-  if (percent <= 1) {
-    skewSize = (skewSize + 1) % (WIGGLES);
-    skew = `skewX(${skewSize - WIGGLE_OFFSET})`;
+  if (step++ > STEPS) {
+    skewSize = (step % WIGGLES) > WIGGLE_OFFSET ? WIGGLES - (step % WIGGLES) : step % WIGGLES;
+    if (step / WIGGLES % 2) skewSize *= 1; // odd iterations go 0 to -3
+    skew = `skewX(${skewSize})`;
     disconnectPid = setTimeout(disconnectUiStep, 15, block, magnitude, start, skewSize);
   }
 
